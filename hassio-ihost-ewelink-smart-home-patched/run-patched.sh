@@ -34,6 +34,29 @@ export IHOST_HARDWARE_VERSION="$(bashio::addon.version)"
 
 bashio::log.info "Using MQTT server: ${MQTT_SERVER}"
 bashio::log.info "Using MQTT user: ${MQTT_USER}"
-bashio::log.info "Starting eWeLink application..."
 
-exec "$@"
+cd /workspace
+bashio::log.info "Working directory: $(pwd)"
+
+if [ -f package.json ] && node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.start ? 0 : 1)"; then
+    bashio::log.info "Starting eWeLink application with: npm start"
+    exec npm start
+fi
+
+if [ -f /workspace/src/index.js ]; then
+    bashio::log.info "Starting eWeLink application with: node /workspace/src/index.js"
+    exec node /workspace/src/index.js
+fi
+
+if [ -f /workspace/src/server.js ]; then
+    bashio::log.info "Starting eWeLink application with: node /workspace/src/server.js"
+    exec node /workspace/src/server.js
+fi
+
+if [ "$#" -gt 0 ]; then
+    bashio::log.info "Starting eWeLink application with original CMD: $*"
+    exec "$@"
+fi
+
+bashio::log.error "No known eWeLink start command found"
+bashio::exit.nok
