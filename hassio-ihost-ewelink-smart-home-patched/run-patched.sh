@@ -30,15 +30,33 @@ if [ -z "$MQTT_SERVER_CONFIG" ] || [ "$MQTT_SERVER_CONFIG" = "null" ]; then
     MQTT_SERVER_CONFIG="mqtt://2c914bdd-mosquitto:1883"
 fi
 
+MQTT_HOST_CONFIG=$(echo "$MQTT_SERVER_CONFIG" | sed -E 's#^mqtts?://([^/:]+).*#\1#')
+MQTT_PORT_CONFIG=$(echo "$MQTT_SERVER_CONFIG" | sed -E 's#^mqtts?://[^/:]+:([0-9]+).*#\1#')
+if [ "$MQTT_PORT_CONFIG" = "$MQTT_SERVER_CONFIG" ] || [ -z "$MQTT_PORT_CONFIG" ]; then
+    MQTT_PORT_CONFIG="1883"
+fi
+
+# Export several aliases because the upstream app is closed/prebuilt and may use different env names.
 export MQTT_SERVER="$MQTT_SERVER_CONFIG"
+export MQTT_URL="$MQTT_SERVER_CONFIG"
+export MQTT_BROKER="$MQTT_SERVER_CONFIG"
+export MQTT_HOST="$MQTT_HOST_CONFIG"
+export MQTT_PORT="$MQTT_PORT_CONFIG"
 export MQTT_USER="$MQTT_USER_CONFIG"
 export MQTT_PASS="$MQTT_PASS_CONFIG"
-export IHOST_HARDWARE_VERSION="1.1.0-patched4"
+export MQTT_USERNAME="$MQTT_USER_CONFIG"
+export MQTT_PASSWORD="$MQTT_PASS_CONFIG"
+export mqtt_server="$MQTT_SERVER_CONFIG"
+export mqtt_username="$MQTT_USER_CONFIG"
+export mqtt_password="$MQTT_PASS_CONFIG"
+export IHOST_HARDWARE_VERSION="1.1.0-patched5"
 export PATH="/workspace/node_modules/.bin:$PATH"
 
 log_info "Node version: $(node --version 2>/dev/null || true)"
 log_info "Npm version: $(npm --version 2>/dev/null || true)"
 log_info "Using MQTT server: ${MQTT_SERVER}"
+log_info "Using MQTT host: ${MQTT_HOST}"
+log_info "Using MQTT port: ${MQTT_PORT}"
 log_info "Using MQTT user: ${MQTT_USER}"
 
 cd /workspace
@@ -49,8 +67,8 @@ for i in $(seq 1 30); do
     if node <<'NODE'
 const mqtt = require('mqtt');
 const url = process.env.MQTT_SERVER || 'mqtt://2c914bdd-mosquitto:1883';
-const username = process.env.MQTT_USER || '';
-const password = process.env.MQTT_PASS || '';
+const username = process.env.MQTT_USER || process.env.MQTT_USERNAME || '';
+const password = process.env.MQTT_PASS || process.env.MQTT_PASSWORD || '';
 const client = mqtt.connect(url, { username, password, connectTimeout: 3000, reconnectPeriod: 0 });
 const timer = setTimeout(() => {
   try { client.end(true); } catch (_) {}
@@ -81,13 +99,11 @@ NODE
     sleep 2
 done
 
-# Prefer already built application if it exists.
 if [ -f /workspace/dist/app.js ]; then
     log_info "Starting eWeLink application with fastify dist/app.js"
     exec fastify start -l info -p 8325 -a 0.0.0.0 /workspace/dist/app.js
 fi
 
-# Avoid npm start first: original npm start runs npm run build, but the image lacks tsc.
 if [ -f /workspace/src/server.js ]; then
     log_info "Starting eWeLink application with node /workspace/src/server.js"
     exec node /workspace/src/server.js
