@@ -1,4 +1,6 @@
 #!/usr/bin/env bashio
+# bashio images may enable nounset; disable it to avoid bashio log.sh indirect variable errors.
+set +u
 set -e
 
 bashio::log.info "Patched eWeLink entrypoint: skipping core_mosquitto install/start checks"
@@ -15,8 +17,8 @@ if [ "$BOARD" != "ihost" ]; then
     bashio::exit.nok
 fi
 
-bashio::log.info "Node version: $(node --version)"
-bashio::log.info "Npm version: $(npm --version)"
+bashio::log.info "Node version: $(node --version 2>/dev/null || true)"
+bashio::log.info "Npm version: $(npm --version 2>/dev/null || true)"
 bashio::log.info "Current Add-on version is $(bashio::addon.version)"
 
 MQTT_SERVER_CONFIG=$(bashio::config 'mqtt.server')
@@ -39,22 +41,22 @@ cd /workspace
 bashio::log.info "Working directory: $(pwd)"
 
 if [ -f package.json ] && node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.start ? 0 : 1)"; then
-    bashio::log.info "Starting eWeLink application with: npm start"
+    bashio::log.info "Starting eWeLink application with npm start"
     exec npm start
 fi
 
 if [ -f /workspace/src/index.js ]; then
-    bashio::log.info "Starting eWeLink application with: node /workspace/src/index.js"
+    bashio::log.info "Starting eWeLink application with node /workspace/src/index.js"
     exec node /workspace/src/index.js
 fi
 
 if [ -f /workspace/src/server.js ]; then
-    bashio::log.info "Starting eWeLink application with: node /workspace/src/server.js"
+    bashio::log.info "Starting eWeLink application with node /workspace/src/server.js"
     exec node /workspace/src/server.js
 fi
 
 if [ "$#" -gt 0 ]; then
-    bashio::log.info "Starting eWeLink application with original CMD: $*"
+    bashio::log.info "Starting eWeLink application with original CMD"
     exec "$@"
 fi
 
