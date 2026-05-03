@@ -1,7 +1,7 @@
 name: "eWeLink Smart Home patched MQTT"
-version: "1.1.0"
+version: "1.1.0-patched2"
 slug: "ewelink_smart_home_patched_mqtt"
-description: "Patched eWeLink Smart Home add-on for iHost: use an already running local MQTT broker instead of relying on core_mosquitto."
+description: "Patched eWeLink Smart Home add-on for iHost: skips core_mosquitto install and uses configured MQTT broker."
 url: "https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo"
 
 startup: application
@@ -9,8 +9,6 @@ boot: manual
 
 arch:
   - armv7
-  - aarch64
-  - amd64
 
 init: false
 
@@ -45,4 +43,4 @@ schema:
     username: str?
     password: str?
 
-image: "ghcr.io/ihost-open-source-project/hassio-ihost-ewelink-smart-home-{arch}"
+# No image key on purpose: Supervisor will build this wrapper locally from Dockerfile.
