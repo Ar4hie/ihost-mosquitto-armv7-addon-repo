@@ -1,29 +1,26 @@
-#!/usr/bin/env bashio
-# bashio images may enable nounset; disable it to avoid bashio log.sh indirect variable errors.
-set +u
+#!/usr/bin/env bash
 set -e
 
-bashio::log.info "Patched eWeLink entrypoint: skipping core_mosquitto install/start checks"
+log_info() {
+    echo "[$(date +%H:%M:%S)] INFO: $*"
+}
 
-bashio::log.info "os info: "
-OS=$(bashio::os)
-bashio::log.info "$OS"
+log_error() {
+    echo "[$(date +%H:%M:%S)] ERROR: $*" >&2
+}
 
-BOARD=$(echo "$OS" | jq -r '.board')
-bashio::log.info "Current Board: $BOARD"
+log_info "Patched eWeLink entrypoint: skipping core_mosquitto install/start checks"
 
-if [ "$BOARD" != "ihost" ]; then
-    bashio::log.error "Failed to start the add-on. Home Assistant must be running on iHost."
-    bashio::exit.nok
+OPTIONS_FILE="/data/options.json"
+MQTT_SERVER_CONFIG=""
+MQTT_USER_CONFIG=""
+MQTT_PASS_CONFIG=""
+
+if [ -f "$OPTIONS_FILE" ]; then
+    MQTT_SERVER_CONFIG=$(jq -r '.mqtt.server // empty' "$OPTIONS_FILE" 2>/dev/null || true)
+    MQTT_USER_CONFIG=$(jq -r '.mqtt.username // empty' "$OPTIONS_FILE" 2>/dev/null || true)
+    MQTT_PASS_CONFIG=$(jq -r '.mqtt.password // empty' "$OPTIONS_FILE" 2>/dev/null || true)
 fi
-
-bashio::log.info "Node version: $(node --version 2>/dev/null || true)"
-bashio::log.info "Npm version: $(npm --version 2>/dev/null || true)"
-bashio::log.info "Current Add-on version is $(bashio::addon.version)"
-
-MQTT_SERVER_CONFIG=$(bashio::config 'mqtt.server')
-MQTT_USER_CONFIG=$(bashio::config 'mqtt.username')
-MQTT_PASS_CONFIG=$(bashio::config 'mqtt.password')
 
 if [ -z "$MQTT_SERVER_CONFIG" ] || [ "$MQTT_SERVER_CONFIG" = "null" ]; then
     MQTT_SERVER_CONFIG="mqtt://127.0.0.1:1883"
@@ -32,33 +29,38 @@ fi
 export MQTT_SERVER="$MQTT_SERVER_CONFIG"
 export MQTT_USER="$MQTT_USER_CONFIG"
 export MQTT_PASS="$MQTT_PASS_CONFIG"
-export IHOST_HARDWARE_VERSION="$(bashio::addon.version)"
+export IHOST_HARDWARE_VERSION="1.1.0-patched3"
+export PATH="/workspace/node_modules/.bin:$PATH"
 
-bashio::log.info "Using MQTT server: ${MQTT_SERVER}"
-bashio::log.info "Using MQTT user: ${MQTT_USER}"
+log_info "Node version: $(node --version 2>/dev/null || true)"
+log_info "Npm version: $(npm --version 2>/dev/null || true)"
+log_info "Using MQTT server: ${MQTT_SERVER}"
+log_info "Using MQTT user: ${MQTT_USER}"
 
 cd /workspace
-bashio::log.info "Working directory: $(pwd)"
+log_info "Working directory: $(pwd)"
 
-if [ -f package.json ] && node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.start ? 0 : 1)"; then
-    bashio::log.info "Starting eWeLink application with npm start"
-    exec npm start
+# Prefer already built application if it exists.
+if [ -f /workspace/dist/app.js ]; then
+    log_info "Starting eWeLink application with fastify dist/app.js"
+    exec fastify start -l info -p 8325 -a 0.0.0.0 /workspace/dist/app.js
 fi
 
-if [ -f /workspace/src/index.js ]; then
-    bashio::log.info "Starting eWeLink application with node /workspace/src/index.js"
-    exec node /workspace/src/index.js
-fi
-
+# Avoid npm start first: original npm start runs npm run build, but the image lacks tsc.
 if [ -f /workspace/src/server.js ]; then
-    bashio::log.info "Starting eWeLink application with node /workspace/src/server.js"
+    log_info "Starting eWeLink application with node /workspace/src/server.js"
     exec node /workspace/src/server.js
 fi
 
+if [ -f /workspace/src/index.js ]; then
+    log_info "Starting eWeLink application with node /workspace/src/index.js"
+    exec node /workspace/src/index.js
+fi
+
 if [ "$#" -gt 0 ]; then
-    bashio::log.info "Starting eWeLink application with original CMD"
+    log_info "Starting eWeLink application with original CMD"
     exec "$@"
 fi
 
-bashio::log.error "No known eWeLink start command found"
-bashio::exit.nok
+log_error "No known eWeLink start command found"
+exit 1
