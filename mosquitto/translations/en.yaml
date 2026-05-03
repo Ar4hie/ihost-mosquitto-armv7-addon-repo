@@ -1,0 +1,27 @@
+configuration:
+  logins:
+    name: "Logins"
+    description: "A list of local users that will be created with username and password."
+  require_certificate:
+    name: "Require Client Certificate"
+    description: "If enabled, clients must provide their own certificate in addition to username/password."
+  certfile:
+    name: "Certificate File"
+    description: "Certificate file from the Home Assistant ssl folder."
+  cafile:
+    name: "CA File"
+    description: "Root certificate file from the Home Assistant ssl folder."
+  keyfile:
+    name: "Private Key File"
+    description: "Private key file from the Home Assistant ssl folder."
+  customize:
+    name: "Customize"
+    description: "Custom Mosquitto configuration folder."
+  debug:
+    name: "Debug"
+    description: "Enable debug logging."
+network:
+  1883/tcp: "Normal MQTT"
+  1884/tcp: "MQTT over WebSocket"
+  8883/tcp: "Normal MQTT with SSL"
+  8884/tcp: "MQTT over WebSocket with SSL"

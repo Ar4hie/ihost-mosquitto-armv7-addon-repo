@@ -1,0 +1,59 @@
+name: "Mosquitto broker"
+version: "6.5.2"
+slug: "mosquitto"
+description: "An Open Source MQTT broker for iHost armv7 based on Home Assistant Mosquitto 6.5.2 image"
+url: "https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/mosquitto"
+arch:
+  - armv7
+auth_api: true
+discovery:
+  - mqtt
+image: "homeassistant/{arch}-addon-mosquitto"
+map:
+  - type: ssl
+    read_only: true
+  - type: share
+    read_only: true
+options:
+  logins: []
+  require_certificate: false
+  certfile: "fullchain.pem"
+  keyfile: "privkey.pem"
+  customize:
+    active: false
+    folder: "mosquitto"
+ports:
+  1883/tcp: 1883
+  1884/tcp: 1884
+  8883/tcp: 8883
+  8884/tcp: 8884
+ports_description:
+  1883/tcp: "Normal MQTT"
+  1884/tcp: "MQTT over WebSocket"
+  8883/tcp: "Normal MQTT with SSL"
+  8884/tcp: "MQTT over WebSocket with SSL"
+schema:
+  logins:
+    - username: "str"
+      password: "password"
+      password_pre_hashed: "bool?"
+  require_certificate: "bool"
+  certfile: "str"
+  cafile: "str?"
+  keyfile: "str"
+  customize:
+    active: "bool"
+    folder: "str"
+  debug: "bool?"
+services:
+  - "mqtt:provide"
+startup: "system"
+watchdog: "tcp://[HOST]:1883"
+init: false
+ingress: false
+panel_admin: true
+backup: "hot"
+stage: "stable"
+boot: "auto"
+hassio_role: "default"
+apparmor: true
