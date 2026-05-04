@@ -1,0 +1,47 @@
+---
+version: 1.8.1
+slug: dnsmasq_armv7
+name: Dnsmasq armv7
+description: A simple DNS server, pinned to last official armv7-compatible release for Sonoff iHost
+url: https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/dnsmasq-armv7
+advanced: true
+arch:
+  - armv7
+init: false
+options:
+  defaults:
+    - 8.8.8.8
+    - 8.8.4.4
+  forwards: []
+  hosts: []
+  services: []
+  cnames: []
+  log_queries: false
+  cache_size: 150
+ports:
+  53/tcp: 53
+  53/udp: 53
+schema:
+  defaults:
+    - str
+  forwards:
+    - domain: str
+      server: str
+  hosts:
+    - host: str
+      ip: str
+  services:
+    - host: str
+      port: str
+      priority: int
+      srv: str
+      weight: int
+  cnames:
+    - name: str
+      target: str
+  log_queries: bool
+  cache_size: int
+startup: system
+
+# No image key on purpose: Supervisor will build this small wrapper locally from Dockerfile.
+# Original 1.8.1 manifest was the last one before armv7 was removed in 2.0.0.
