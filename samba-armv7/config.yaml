@@ -1,0 +1,66 @@
+---
+version: 12.5.4
+slug: samba_armv7
+name: Samba share armv7
+description: Expose Home Assistant folders with SMB/CIFS, pinned to last official armv7-compatible release for Sonoff iHost
+url: https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/samba-armv7
+arch:
+  - armv7
+hassio_api: true
+host_network: true
+init: false
+map:
+  - addons:rw
+  - all_addon_configs:rw
+  - backup:rw
+  - homeassistant_config:rw
+  - media:rw
+  - share:rw
+  - ssl:rw
+options:
+  username: homeassistant
+  password: null
+  workgroup: WORKGROUP
+  local_master: true
+  enabled_shares:
+    - addons
+    - addon_configs
+    - backup
+    - config
+    - media
+    - share
+    - ssl
+  compatibility_mode: false
+  apple_compatibility_mode: true
+  server_signing: "default"
+  veto_files:
+    - ._*
+    - .DS_Store
+    - Thumbs.db
+    - icon?
+    - .Trashes
+  allow_hosts:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 169.254.0.0/16
+    - fe80::/10
+    - fc00::/7
+schema:
+  username: str
+  password: password
+  workgroup: str
+  local_master: bool
+  enabled_shares:
+    - "match(^(?i:(addons|addon_configs|backup|config|media|share|ssl))$)"
+  compatibility_mode: bool
+  apple_compatibility_mode: bool
+  server_signing: list(default|auto|mandatory|disabled)
+  veto_files:
+    - str
+  allow_hosts:
+    - str
+startup: services
+
+# No image key on purpose: Supervisor will build this small wrapper locally from Dockerfile.
+# Original 12.5.4 manifest was the last one before armv7 was removed in 12.6.0.
