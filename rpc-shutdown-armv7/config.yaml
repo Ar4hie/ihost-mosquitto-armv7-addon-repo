@@ -1,0 +1,31 @@
+---
+version: "2.5"
+slug: rpc_shutdown_armv7
+name: RPC Shutdown armv7
+description: Shutdown Windows machines remotely, pinned to last official armv7-compatible release for Sonoff iHost
+url: https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/rpc-shutdown-armv7
+arch:
+  - armv7
+host_network: true
+options:
+  computers:
+    - address: 192.168.0.1
+      alias: test-pc
+      credentials: user%password
+      delay: 0
+      message:
+        Home Assistant is shutting down this PC. This cannot be canceled. Please
+        save your work!
+schema:
+  computers:
+    - address: str
+      alias: match(^[\w-]*$)
+      credentials: match(^[^%]*(?:%.*)?$)
+      delay: int(0,600)?
+      message: str?
+startup: services
+stdin: true
+init: false
+
+# No image key on purpose: Supervisor will build this small wrapper locally from Dockerfile.
+# Original 2.5 manifest was the last one before armv7 was removed in 3.0.
