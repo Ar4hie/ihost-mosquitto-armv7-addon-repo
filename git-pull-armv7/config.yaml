@@ -1,0 +1,53 @@
+---
+version: 8.0.1
+slug: git_pull_armv7
+name: Git pull armv7
+description: Simple git pull to update the local configuration, pinned to last official armv7-compatible release for Sonoff iHost
+url: https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/git-pull-armv7
+advanced: true
+arch:
+  - armv7
+boot: manual
+hassio_api: true
+hassio_role: homeassistant
+init: false
+map:
+  - config:rw
+options:
+  repository: null
+  git_branch: master
+  git_remote: origin
+  auto_restart: false
+  restart_ignore:
+    - ui-lovelace.yaml
+    - .gitignore
+  git_command: pull
+  git_prune: false
+  deployment_key: []
+  deployment_user: ""
+  deployment_password: ""
+  deployment_key_protocol: rsa
+  repeat:
+    active: false
+    interval: 300
+schema:
+  repository: str
+  git_branch: str
+  git_remote: str
+  auto_restart: bool
+  restart_ignore:
+    - str
+  git_command: list(pull|reset)
+  git_prune: bool
+  deployment_key:
+    - str
+  deployment_user: str
+  deployment_password: password
+  deployment_key_protocol: match(rsa|dsa|ecdsa|ed25519|rsa)
+  repeat:
+    active: bool
+    interval: int
+startup: services
+
+# No image key on purpose: Supervisor will build this small wrapper locally from Dockerfile.
+# Original 8.0.1 manifest was the last one before armv7 was removed in 9.0.0.
