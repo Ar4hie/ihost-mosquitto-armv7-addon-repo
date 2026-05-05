@@ -1,0 +1,33 @@
+name: Generate add-on icons
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/generate_addon_icons.py'
+      - '.github/workflows/generate-addon-icons.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate icons
+        run: python3 tools/generate_addon_icons.py
+
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add '**/icon.png'
+          if git diff --cached --quiet; then
+            echo "No icon changes to commit."
+          else
+            git commit -m "Generate add-on icon files"
+            git push
+          fi
