@@ -1,0 +1,87 @@
+name: Build Zigbee2MQTT armv7
+
+on:
+  pull_request:
+    paths:
+      - "hassio-ihost-zigbee2mqtt-armv7/**"
+      - ".github/workflows/build-zigbee2mqtt-armv7.yml"
+  push:
+    tags:
+      - "z2m-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  ADDON_DIR: hassio-ihost-zigbee2mqtt-armv7
+  IMAGE: ghcr.io/ar4hie/hassio-ihost-zigbee2mqtt-armv7
+
+jobs:
+  build:
+    name: Build linux/arm/v7 image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Resolve and validate version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_VERSION="$(awk -F'"' '/^version:/ {print $2; exit}' "${ADDON_DIR}/config.yaml")"
+          if [[ -z "${CONFIG_VERSION}" ]]; then
+            echo "Unable to read version from ${ADDON_DIR}/config.yaml" >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF}" == refs/tags/z2m-v* ]]; then
+            RELEASE_VERSION="${GITHUB_REF_NAME#z2m-v}"
+            if [[ "${RELEASE_VERSION}" != "${CONFIG_VERSION}" ]]; then
+              echo "Tag version ${RELEASE_VERSION} does not match config version ${CONFIG_VERSION}" >&2
+              exit 1
+            fi
+            echo "push=true" >> "${GITHUB_OUTPUT}"
+          else
+            RELEASE_VERSION="${CONFIG_VERSION}"
+            echo "push=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+          echo "version=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Building Zigbee2MQTT add-on version ${RELEASE_VERSION}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.version.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and optionally publish
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.ADDON_DIR }}
+          file: ${{ env.ADDON_DIR }}/Dockerfile
+          platforms: linux/arm/v7
+          push: ${{ steps.version.outputs.push == 'true' }}
+          tags: ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/armv7-base:3.22
+            BUILD_VERSION=${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo
+            org.opencontainers.image.title=Zigbee2MQTT armv7 for Sonoff iHost
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
