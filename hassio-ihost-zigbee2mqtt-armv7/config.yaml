@@ -1,0 +1,85 @@
+name: "Zigbee2MQTT armv7"
+version: "2.12.1-1"
+slug: "zigbee2mqtt_armv7"
+description: "Zigbee2MQTT 2.12.1 for Sonoff iHost and Home Assistant systems running on armv7."
+url: "https://github.com/Ar4hie/ihost-mosquitto-armv7-addon-repo/tree/main/hassio-ihost-zigbee2mqtt-armv7"
+
+startup: application
+boot: manual
+stage: experimental
+
+arch:
+  - armv7
+
+init: false
+uart: true
+udev: true
+hassio_api: true
+
+ingress: true
+timeout: 30
+panel_icon: "mdi:zigbee"
+
+services:
+  - "mqtt:need"
+
+map:
+  - type: share
+    read_only: false
+  - type: homeassistant_config
+    read_only: false
+    path: "/config"
+  - type: addon_config
+    read_only: false
+    path: "/addon_config"
+
+ports:
+  8485/tcp: 8485
+  8099/tcp: null
+
+ports_description:
+  8485/tcp: "Socat TCP listener"
+  8099/tcp: "Zigbee2MQTT frontend"
+
+options:
+  data_path: "/config/zigbee2mqtt"
+  socat:
+    enabled: false
+    master: "pty,raw,echo=0,link=/tmp/ttyZ2M,mode=777"
+    slave: "tcp-listen:8485,keepalive,nodelay,reuseaddr,keepidle=1,keepintvl=1,keepcnt=5"
+    options: "-d -d"
+    log: false
+  mqtt: {}
+  serial:
+    port: "/dev/ttyS4"
+    adapter: "ember"
+    baudrate: 115200
+    rtscts: false
+  disable_tuya_default_response: false
+
+schema:
+  data_path: str
+  socat:
+    enabled: bool?
+    master: str?
+    slave: str?
+    options: str?
+    log: bool?
+  mqtt:
+    server: str?
+    ca: str?
+    key: str?
+    cert: str?
+    user: str?
+    password: password?
+    base_topic: str?
+  serial:
+    port: str?
+    adapter: "match(zstack|deconz|zigate|ezsp|ember|zboss)?"
+    baudrate: int?
+    rtscts: bool?
+  watchdog: str?
+  force_onboarding: bool?
+  disable_tuya_default_response: bool?
+
+image: "ghcr.io/ar4hie/hassio-ihost-zigbee2mqtt-{arch}"
